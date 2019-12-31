@@ -3,7 +3,7 @@
 
 class PagaConnectClient {
 
-    var $test_server = "https://qa1.mypaga.com"; //"http://localhost:8080";;
+    var $test_server = "https://qa1.mypaga.com"; //"http://localhost:8080"
     var $live_server = "https://www.mypaga.com";
 
 
@@ -24,6 +24,8 @@ class PagaConnectClient {
         $this->userData = $builder->userData;
     }
 
+   var  $access_token = "";
+
     public static function builder(){
         return new Builder();
     }
@@ -38,6 +40,7 @@ class PagaConnectClient {
      *            64 byte encoding of both public ID and password with ':' in between them
      */
     public function buildRequest($url, $credential, $data = null) {
+
         $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
@@ -99,7 +102,7 @@ class PagaConnectClient {
      * @param string product_code
      *            Optional identifier for the product to be bought 
      * @param string currency
-     *            The currency code of the transaction, NGN is the only supported currency as of now (February 2016)  
+     *            The currency code of the transaction
      * @return JSON Object
      *
      */
@@ -107,7 +110,7 @@ class PagaConnectClient {
         
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/merchantPayment";
-        $credential = "Bearer ".$access_token;
+        $credential = "Bearer ". $this->access_token;
         $payment_link = "";
 
         if($currency == null){
@@ -146,11 +149,11 @@ class PagaConnectClient {
      * @return JSON Object
      *
      */
-    function moneyTransfer($access_token, $reference_number, $amount, $skipMessaging){
+    function moneyTransfer($reference_number, $amount, $skipMessaging){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/moneyTransfer";
-        $credential = "Bearer ".$access_token;
+        $credential = "Bearer ". $this->access_token;
         $payment_link = "";
 
         if($skipMessaging != null){
@@ -179,11 +182,11 @@ class PagaConnectClient {
      * @return JSON Object
      *
      */
-    function getOneTimeToken($access_token, $reference_number){
+    function getOneTimeToken($reference_number){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/getOneTimeToken";
-        $credential = "Bearer ".$access_token;
+        $credential = "Bearer ". $this->access_token;
         $payment_link = $merchantPaymentUrl."/referenceNumber/".$reference_number;
 
         $curl = $this->buildRequest($payment_link, $credential);
@@ -196,21 +199,37 @@ class PagaConnectClient {
     }
 
 
-
- /**
-     * @param string reference_number
-     *            A unique reference number provided by the client to uniquely identify the transaction
-     * @return string JSON Object with access token inside
-     *         APIs
+  /**
+    * @return string JSON Object with access token inside
+     *
      */
-    function getBanksList($reference_number,$local=null){
+    function getBanksList(){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $getUserDetailUrl = $server."/paga-webservices/oauth2/secure/banksList";
+        $banks_link = $getUserDetailUrl;
+        $credential = "Bearer ". $this->access_token;
+
+        $curl = $this->buildRequest($banks_link, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+
+    }
+
+    /**
+     * @return string JSON Object
+     */
+    function getUserDetails(){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $getUserDetailUrl = $server."/paga-webservices/oauth2/secure/getUserDetails";
-        $credential = null;
-        $payment_link = $getUserDetailUrl."/publicId/".$this->client_id."/referenceNumber/".$reference_number;
+        $userDetail_link = $getUserDetailUrl;
+        $credential = "Bearer ". $this->access_token;
 
-        $curl = $this->buildRequest($payment_link, $credential);
+        $curl = $this->buildRequest($userDetail_link, $credential);
         $response = curl_exec($curl);
 
         $this->checkCURL($curl);
