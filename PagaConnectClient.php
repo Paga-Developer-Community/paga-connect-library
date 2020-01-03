@@ -8,16 +8,22 @@ class PagaConnectClient {
 
 
     /**
-     * @param string client_id
+     * @param string principal
      *            Business public ID from paga
-     * @param string password
+     * @param string credential
      *            Business password from paga
+     * @param string redirectUri
+     *             Business web site page
      * @param boolean test
      *            flag to set testing or live(true for test,false for live)
+     * @param String scope
+     *             the operation types eg. MERCHANT_PAYMENT,USER_DETAILS_REQUEST
+     * @param String userData
+     *              userData eg. FIRST_NAME, LAST_NAME, USERNAME
      */
     function __construct($builder) {
-        $this->client_id = $builder->clientId;
-        $this->password = $builder->password;
+        $this->principal = $builder->principal;
+        $this->credential = $builder->credential;
         $this->redirectUri = $builder->redirectUri;
         $this->test = $builder->test;
         $this->scope = $builder->scope;
@@ -75,7 +81,7 @@ class PagaConnectClient {
     function getAccessToken($authorization_code){
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $access_token_url = "/paga-webservices/oauth2/token?";
-        $credential = "Basic " . base64_encode("$this->client_id:$this->password");
+        $credential = "Basic " . base64_encode("$this->principal:$this->credential");
 
         $url = $server.$access_token_url."grant_type=authorization_code&redirect_uri=".
         $this->redirectUri."&code=".$authorization_code."&scope=".$this->scope."&user_data=".$this->userData;
@@ -91,8 +97,6 @@ class PagaConnectClient {
 
 
     /**
-     * @param string access_token
-     *            User's access token 
      * @param string reference_number
      *            A unique reference number provided by the client to uniquely identify the transaction
      * @param string amount
@@ -106,7 +110,7 @@ class PagaConnectClient {
      * @return JSON Object
      *
      */
-    function makePayment($access_token, $reference_number, $amount, $user_id, $product_code, $currency){
+    function makePayment($reference_number, $amount, $user_id, $product_code, $currency){
         
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/merchantPayment";
@@ -138,34 +142,32 @@ class PagaConnectClient {
 
 
      /**
-     * @param string access_token
-     *            User's access token 
-     * @param string reference_number
+    * @param string reference_number
      *            A unique reference number provided by the client to uniquely identify the transaction
      * @param string amount
      *            Amount to charge the user
+     * @param String recipientPhoneNumber
+      *            recipientPhoneNumber
      * @param boolean skipMessaging 
      *            Turn off Notification of User about payment made to their account.
      * @return JSON Object
      *
      */
-    function moneyTransfer($reference_number, $amount, $skipMessaging){
+    function moneyTransfer($referenceNumber, $amount, $recipientPhoneNumber, $skipMessaging){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
-        $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/moneyTransfer";
+        $moneyTransferUrl = $server."/paga-webservices/oauth2/secure/moneyTransfer";
         $credential = "Bearer ". $this->access_token;
-        $payment_link = "";
+        $transfer_link = "";
 
         if($skipMessaging != null){
-            $payment_link = $merchantPaymentUrl."/referenceNumber/".$reference_number."/amount/".
-            $amount."/skipMessaging/".$skipMessaging;
+            $transfer_link = $moneyTransferUrl."/amount/".$amount."/destinationPhoneNumber/".$recipientPhoneNumber."/skipMessaging/".$skipMessaging."/referenceNumber/".$referenceNumber;
         }
         else {
-            $payment_link = $merchantPaymentUrl."/referenceNumber/".$reference_number."/amount/".$amount;
+            $transfer_link = $moneyTransferUrl."/amount/".$amount."/destinationPhoneNumber/".$recipientPhoneNumber."/referenceNumber/".$referenceNumber;
         }
         
-
-        $curl = $this->buildRequest($payment_link, $credential);
+        $curl = $this->buildRequest($transfer_link, $credential);
         $response = curl_exec($curl);
 
         $this->checkCURL($curl);
@@ -175,8 +177,31 @@ class PagaConnectClient {
     }
 
     /**
-     * @param string access_token
-     *            User's access token 
+     * @param string reference_number
+     *            A unique reference number provided by the client to uniquely identify the transaction
+     * @param string amount
+     *            Amount to charge the user
+     * @return JSON Object
+     *
+     */
+    function validateMoneyTransfer($reference_number, $amount, $recipientPhoneNumber){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $validateMoneyTransferUrl = $server."/paga-webservices/oauth2/secure/validateMoneyTransfer";
+        $credential = "Bearer ". $this->access_token;
+
+        $validateMoneyTransfer_link = $validateMoneyTransferUrl."/amount/".$amount."/destinationPhoneNumber/".$recipientPhoneNumber."/referenceNumber/".$reference_number;
+
+        $curl = $this->buildRequest($validateMoneyTransfer_link, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+
+    }
+
+    /**
      * @param string reference_number
      *            A unique reference number provided by the client to uniquely identify the transaction
      * @return JSON Object
@@ -185,11 +210,11 @@ class PagaConnectClient {
     function getOneTimeToken($reference_number){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
-        $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/getOneTimeToken";
+        $oneTimeTokenUrl = $server."/paga-webservices/oauth2/secure/getOneTimeToken";
         $credential = "Bearer ". $this->access_token;
-        $payment_link = $merchantPaymentUrl."/referenceNumber/".$reference_number;
+        $oneTimeToken_link = $oneTimeTokenUrl."/referenceNumber/".$reference_number;
 
-        $curl = $this->buildRequest($payment_link, $credential);
+        $curl = $this->buildRequest($oneTimeToken_link, $credential);
         $response = curl_exec($curl);
 
         $this->checkCURL($curl);
@@ -200,14 +225,14 @@ class PagaConnectClient {
 
 
   /**
-    * @return string JSON Object with access token inside
+     * @return JSON Object
      *
      */
     function getBanksList(){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
-        $getUserDetailUrl = $server."/paga-webservices/oauth2/secure/banksList";
-        $banks_link = $getUserDetailUrl;
+        $banksUrl = $server."/paga-webservices/oauth2/secure/banksList";
+        $banks_link = $banksUrl;
         $credential = "Bearer ". $this->access_token;
 
         $curl = $this->buildRequest($banks_link, $credential);
@@ -220,13 +245,35 @@ class PagaConnectClient {
     }
 
     /**
+     * @return JSON Object
+     *
+     */
+    function getMobileOperatorsList(){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $mobileOperatorUrl = $server."/paga-webservices/oauth2/secure/mobileOperatorsList";
+        $mobileOperator_link = $mobileOperatorUrl;
+        $credential = "Bearer ". $this->access_token;
+
+        $curl = $this->buildRequest($mobileOperator_link, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+
+    }
+
+    /**
+     * @param string $reference_number
+     *            A unique reference number provided by the client to uniquely identify the transaction
      * @return string JSON Object
      */
-    function getUserDetails(){
+    function getUserDetails($reference_number){
 
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $getUserDetailUrl = $server."/paga-webservices/oauth2/secure/getUserDetails";
-        $userDetail_link = $getUserDetailUrl;
+        $userDetail_link = $getUserDetailUrl."/referenceNumber/".$reference_number;
         $credential = "Bearer ". $this->access_token;
 
         $curl = $this->buildRequest($userDetail_link, $credential);
@@ -237,6 +284,92 @@ class PagaConnectClient {
         return $response;
 
     }
+
+    /**
+     * @param string bankPublicId
+     *            public id of bank
+     * @param string $bankAccountNumber
+     *            Account number in the bank
+     * @param string reference_number
+     *            A unique reference number provided by the client to uniquely identify the transaction
+     * @return JSON Object
+     *
+     */
+    function validateBankAccountNumber($bankPublicId, $bankAccountNumber, $reference_number){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $validateBankAccountNumberUrl = $server."/paga-webservices/oauth2/secure/validateBankAccountNumber";
+        $credential = "Bearer ". $this->access_token;
+
+        $validate_link = $validateBankAccountNumberUrl."/bankPublicId/".$bankPublicId."/accountNumber/".
+            $bankAccountNumber."/referenceNumber/".$reference_number;
+
+        $curl = $this->buildRequest($validate_link, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+
+    }
+    /*
+     * @param String $amount
+     * @param String $bankPublicId
+     * @param String $bankAccountNumber
+     * @param String $recipientPhoneNumber
+     * @param String $recipientFirstName
+     * @param String $recipientLastName
+     * @param String $recipientEmail
+     * @param String $remarks
+     * @param String $recipientMobileOperatorPublicId
+     * @param String $externalReferenceNumber
+     */
+
+    function moneyTransferToBank($amount, $bankPublicId, $bankAccountNumber, $recipientPhoneNumber, $recipientFirstName, $recipientLastName,$recipientEmail,$remarks,$recipientMobileOperatorPublicId,$externalReferenceNumber){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $moneyTransferToBankUrl = $server."/paga-webservices/oauth2/secure/moneyTransferToBank";
+        $credential = "Bearer ". $this->access_token;
+
+        $moneyTransferToBank = $moneyTransferToBankUrl."/amount/".$amount."/destinationBankPublicId/".$bankPublicId."/destinationBankAccountNumber/".$bankAccountNumber."/recipientPhoneNumber/".$recipientPhoneNumber."/recipientFirstName/".$recipientFirstName."/recipientLastName/".$recipientLastName."/recipientEmail/".$recipientEmail."/remarks/".$remarks."/recipientMobileOperatorPublicId/".$recipientMobileOperatorPublicId."/externalReferenceNumber/".$externalReferenceNumber;
+
+        $curl = $this->buildRequest($moneyTransferToBank, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+
+    }
+
+    /*
+     * @param String $amount,
+     * @param String $bankPublicId
+     * @param String $bankAccountNumber
+     * @param String $recipientPhoneNumber
+     * @param String $recipientFirstName
+     * @param String $recipientLastName
+     * @param String $recipientEmail
+     * @param String $remarks
+     * @param String $recipientMobileOperatorPublicId
+     * @param String $externalReferenceNumber
+     */
+    function validateMoneyTransferToBank($amount, $bankPublicId, $bankAccountNumber, $recipientPhoneNumber, $recipientFirstName, $recipientLastName,$recipientEmail,$remarks,$recipientMobileOperatorPublicId,$externalReferenceNumber){
+
+        $server = ($this->test) ? $this->test_server : $this->live_server;
+        $validateMoneyTransferToBankUrl = $server."/paga-webservices/oauth2/secure/validateMoneyTransferToBank";
+        $credential = "Bearer ". $this->access_token;
+
+        $validateMoneyTransferToBank = $validateMoneyTransferToBankUrl."/amount/".$amount."/destinationBankPublicId/".$bankPublicId."/destinationBankAccountNumber/".$bankAccountNumber."/recipientPhoneNumber/".$recipientPhoneNumber."/recipientFirstName/".$recipientFirstName."/recipientLastName/".$recipientLastName."/recipientEmail/".$recipientEmail."/remarks/".$remarks."/recipientMobileOperatorPublicId/".$recipientMobileOperatorPublicId."/externalReferenceNumber/".$externalReferenceNumber;
+
+        $curl = $this->buildRequest($validateMoneyTransferToBank, $credential);
+        $response = curl_exec($curl);
+
+        $this->checkCURL($curl);
+
+        return $response;
+    }
+
 
     /**
      * @param $curl
@@ -264,12 +397,12 @@ class Builder {
     function __construct() {
         
     }
-    public function setClientId($clientId) {
-       $this->clientId = $clientId;
+    public function setPrincipal($principal) {
+       $this->principal = $principal;
        return $this;
     }
-    public function setSecret($password){
-        $this->password = $password;
+    public function setCredential($credential){
+        $this->credential =$credential;
        return $this;
     }
     public function setRedirectUri($redirect){
@@ -284,7 +417,7 @@ class Builder {
         $this->userData = implode("+", $userDataArr);
        return $this;
     }
-    public function setIsTest($flag){
+    public function setTest($flag){
         $this->test = $flag;
        return $this;
     }
