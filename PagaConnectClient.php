@@ -110,7 +110,7 @@ class PagaConnectClient {
      * @return JSON Object
      *
      */
-    function makePayment($reference_number, $amount, $user_id, $product_code, $currency){
+    function merchantPayment($reference_number, $amount, $user_id, $product_code, $currency){
         
         $server = ($this->test) ? $this->test_server : $this->live_server;
         $merchantPaymentUrl = $server."/paga-webservices/oauth2/secure/merchantPayment";
