@@ -1,0 +1,38 @@
+{
+    "name": "paga/paga-connect",
+    "description": "Paga Connect is a merchant library for Paga business clients that want to have a seamless integration with Paga without the need to require their users to always approve transactions. Users give permissions and approve the first time and then subsequent transactions are performed on behalf of the user.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "pagadevcomm",
+            "email": "pagadevcomm@paga.com"
+        },
+        {
+            "name": "Nwabuokei Nnamdi",
+            "email": "nnwabuokei@paga.com",
+            "role": "Software Engineer"
+
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/pagadevcomm/paga-connect-library/issues"
+    },
+    "config": {
+        "platform": {
+            "php": "7.2.29"
+        },
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "PagaConnect\\":"src/PagaConnect"
+        }
+    }
+   
+}
