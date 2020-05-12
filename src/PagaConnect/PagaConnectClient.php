@@ -50,8 +50,8 @@ class PagaConnectClient
      */
     function __construct($builder)
     {
-        $this->principal = $builder->principal;
-        $this->credential = $builder->credential;
+        $this->clientId = $builder->clientId;
+        $this->password = $builder->password;
         $this->redirectUri = $builder->redirectUri;
         $this->test = $builder->test;
         $this->scope = $builder->scope;
@@ -306,26 +306,26 @@ class Builder
      /**
       * Set Principal function
       *
-      * @param string $principal Merchant public ID from paga
+      * @param string $clientId Merchant public ID from paga
       * 
       * @return $this
       */
-    public function setPrincipal($principal)
+    public function setClientId($clientId)
     {
-        $this->principal = $principal;
+        $this->clientId = $clientId;
         return $this;
     }
 
      /**
       * Set Credential function
       *
-      * @param string $credential Merchant password from paga
+      * @param string $password Merchant password from paga
       * 
       * @return $this
       */
-    public function setCredential($credential)
+    public function setSecret($password)
     {
-        $this->credential =$credential;
+        $this->credential =$password;
         return $this;
     }
 
