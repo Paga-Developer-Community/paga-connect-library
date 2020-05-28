@@ -44,7 +44,7 @@ $token_data = $pagaConnect->getAccessToken($authorization_code);
 Access Token is used in making merchant payment like this:
 
 ```
-$payment_data = $pagaConnect->merchantPayment( $token_data['access_token'],"ref-12345",500, 7101, "1wxew", "NGN");
+$payment_data = $pagaConnect->merchantPayment( $token_data, "ref-12345", 500, 7101, "1wxew", "NGN");
 ```
 
 **Money Transfer**
@@ -53,7 +53,7 @@ This operation allows you to credit a user's paga account. To make use of this f
 
 
 ```
-$result = $pagaConnect ->moneyTransfer( $token_data['access_token'],"ref123", "2200", "08184361000", "yes");
+$result = $pagaConnect ->moneyTransfer( $token_data, "ref123", "2200", "08184361000", "yes");
 ```
 **Get User Details**
 
@@ -61,5 +61,5 @@ This Operation allows the client to get the user's personal details. The data re
 
 
 ```
-$result = $pagaConnect ->getUserDetails( $token_data['access_token'],"ref123");
+$result = $pagaConnect ->getUserDetails( $token_data, "ref123");
 ```
