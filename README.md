@@ -1,4 +1,4 @@
-# PagaConnect PHP API Library v1.0.0
+# PagaConnect PHP API Library v1.0.3
 
 ## Connect Services exposed by the library
 

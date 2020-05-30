@@ -221,7 +221,7 @@ class PagaConnectClient
         $this->checkCURL($curl);
         return $response;
 
-  }
+    }
 
     /**
      * Get One Time Token 
