@@ -192,46 +192,36 @@ class PagaConnectClient
      /** 
       * Money Transfer
       * 
-      * @param String  $access_token         User's access token            
-      * @param string  $referenceNumber      A unique reference number provided by 
-      *                                      the client to uniquely identify the 
-      *                                      transaction           
-      * @param string  $amount               Amount to charge the user         
-      * @param String  $recipientPhoneNumber recipientPhoneNumber           
-      * @param boolean $skipMessaging        Turn off Notification of User about 
-      *                                      payment made to their account.
+      * @param String  $access_token        User's access token            
+      * @param string  $referenceNumber     A unique reference number provided by 
+      *                                     the client to uniquely identify the 
+      *                                     transaction           
+      * @param string  $amount              Amount to charge the user
+      * @param boolean $skipMessaging       Turn off Notification of User about 
+      *                                     payment made to their account.         
+      * @param String  $recipientCredential recipientPhoneNumber          
       *            
       * @return JSON Object
       */
     function moneyTransfer($access_token, $referenceNumber, $amount, 
-        $recipientPhoneNumber, $skipMessaging
+        $skipMessaging, $recipientCredential
     ) {
         $server = ($this->test) ? $this->test_server : $this->live_server;
-        $moneyTransferUrl = $server."/paga-webservices/oauth2/secure/moneyTransfer";
+        $moneyTransferUrl = $server.
+        "/paga-webservices/oauth2/secure/moneyTransfer/v2?";
         $credential = "Bearer ". $access_token;
-        $transfer_link = "";
-
-        if ($skipMessaging != null) {
-            $transfer_link = $moneyTransferUrl."/amount/"
-                            .$amount."/destinationPhoneNumber/"
-                            .$recipientPhoneNumber."/skipMessaging/"
-                            .$skipMessaging."/referenceNumber/"
-                            .$referenceNumber;
-        } else {
-            $transfer_link = $moneyTransferUrl."/amount/"
-                            .$amount."/destinationPhoneNumber/"
-                            .$recipientPhoneNumber."/referenceNumber/"
-                            .$referenceNumber;
-        }
-        
+        $transfer_link = "";       
+        $transfer_link = $moneyTransferUrl."amount="
+                          .strval($amount)."&referenceNumber="
+                          .strval($referenceNumber)."&skipMessaging="
+                          .strval($skipMessaging)."&recipientCredential="
+                          .strval($recipientCredential);    
         $curl = $this->buildRequest($transfer_link, $credential);
         $response = curl_exec($curl);
-
         $this->checkCURL($curl);
-
         return $response;
 
-    }
+  }
 
     /**
      * Get One Time Token 
